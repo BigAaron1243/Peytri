@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <vector>
 #include <chrono>
+#include <cmath>
 #include "math.h"
 
 class Giblet {
@@ -34,34 +35,45 @@ public:
 	float vx;
 	float vy;
     float rotation = 10*M_PI/180;
+	float sight_cone_range;
     float sight_range = 100;
     sf::CircleShape shape;
-	void set_values(float, float, float);
+	void set_values(float, float, float, float);
 	void update_values();
-    sf::Vertex sight_line[2];
+    //sf::Vertex sight_line[2];
+	sf::Vertex sight_cone[4];// = {sf::Vector2f(10, 10), sf::Vector2f(100, 0), sf::Vector2f(0, 90)};
+	
 
 	std::vector<int> v3Color = {0, 0, 0};   
 };
 
-void Organism::set_values(float psize, float pxposition, float pyposition) {
+void Organism::set_values(float psize, float pxposition, float pyposition, float psight_cone_range) {
     size = psize;
     shape.setRadius(size);
     xposition = pxposition;
     yposition = pyposition;
 	shape.setOrigin(psize, psize);
 	shape.setPosition(xposition /* - sqrt(size / 2)*/, yposition /*- sqrt(size / 2)*/);
-	
-	sight_line[0] = sf::Vector2f(xposition, yposition);
-	sight_line[1] = sf::Vector2f(xposition + (sight_range * sin(rotation)), yposition + (sight_range * cos(rotation)));
+	sight_cone_range = psight_cone_range * M_PI/180;
+	//sight_line[0] = sf::Vector2f(xposition, yposition);
+	//sight_line[1] = sf::Vector2f(xposition + (sight_range * sin(rotation)), yposition + (sight_range * cos(rotation)));
+	sight_cone[0] = sf::Vector2f(xposition, yposition);
+	sight_cone[1] = sf::Vector2f(xposition + (sight_range * sin(rotation - sight_cone_range)), yposition + (sight_range * cos(rotation - sight_cone_range)));
+	sight_cone[2] = sf::Vector2f(xposition + (sight_range * sin(rotation + sight_cone_range)), yposition + (sight_range * cos(rotation + sight_cone_range)));
+	sight_cone[3] = sf::Vector2f(xposition, yposition);
 	//sight_line[1] = sf::Vector2f(xposition + 20, yposition + 20);
 
 }
 
 void Organism::update_values() {
-	sight_line[0] = sf::Vector2f(xposition, yposition);
-	sight_line[1] = sf::Vector2f(xposition + (sight_range * sin(rotation)), yposition + (sight_range * cos(rotation)));
-	sight_line[0].color = sf::Color::Red;
-	sight_line[1].color = sf::Color::Red;
+	//sight_line[0] = sf::Vector2f(xposition, yposition);
+	//sight_line[1] = sf::Vector2f(xposition + (sight_range * sin(rotation)), yposition + (sight_range * cos(rotation)));
+	//sight_line[0].color = sf::Color::Red;
+	//sight_line[1].color = sf::Color::Red;
+	sight_cone[0] = sf::Vector2f(xposition, yposition);
+	sight_cone[1] = sf::Vector2f(xposition + (sight_range * sin(rotation - sight_cone_range)), yposition + (sight_range * cos(rotation - sight_cone_range)));
+	sight_cone[2] = sf::Vector2f(xposition + (sight_range * sin(rotation + sight_cone_range)), yposition + (sight_range * cos(rotation + sight_cone_range)));
+	sight_cone[3] = sf::Vector2f(xposition, yposition);
 	shape.setPosition(xposition /* - sqrt(size / 2)*/, yposition /*- sqrt(size / 2)*/);
 	xposition += vx;
 	yposition += vy;
@@ -83,6 +95,7 @@ int main()
 
     //These will be divided by 1000
     int max_food_size = 1000; 
+    int min_food_size = 1000;
 
     //Initialise variables
     std::vector<Giblet> giblet_list;
@@ -95,7 +108,7 @@ int main()
     std::vector<Organism> organism_list;
     for(int i = 0; i < organism_count; i++) {
         Organism new_organism;
-        new_organism.set_values(5, rand() % world_size, rand() % world_size);
+        new_organism.set_values(5, rand() % world_size, rand() % world_size, 5);
         organism_list.push_back(new_organism);
     }
 
@@ -126,7 +139,7 @@ int main()
 		//keyboard input 
 		organism_list[0].vx = 0;
 		organism_list[0].vy = 0;
-		float speed = 1;
+		float speed = 3;
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
 		{
 			organism_list[0].vx = -speed;
@@ -155,12 +168,14 @@ int main()
         if (food_spawn_chance > (rand() % 1000000000)) {
             Giblet new_giblet;
             new_giblet.set_values(max_food_size, min_food_size, rand() % world_size, rand() % world_size);
-            giblet_list.push_back(new_giblet);
+			giblet_list.push_back(new_giblet);
+			/*
 			Organism new_organism;
 			new_organism.set_values(5, 800 + (((rand() % 2) * 2) - 1) * 5, 800 + (((rand() % 2) * 2) - 1) * 5);
 			organism_list.push_back(new_organism);
 			organism_list[organism_list.size() - 1].vx = 0;
 			organism_list[organism_list.size() - 1].vy = 0;
+			*/
         }
 
 		//Physics loop
@@ -179,10 +194,10 @@ int main()
 							organism_list[i].yposition += (((rand() % 2) * 2) - 1) * 5;
 							
 						} else {
-							organism_list[i].xposition += collision_vector.x / 2;
-							organism_list[i].yposition += collision_vector.y / 2;
-							organism_list[j].xposition -= collision_vector.x / 2;
-							organism_list[j].yposition -= collision_vector.y / 2;
+							organism_list[i].xposition += collision_vector.x / 4;
+							organism_list[i].yposition += collision_vector.y / 4;
+							organism_list[j].xposition -= collision_vector.x / 4;
+							organism_list[j].yposition -= collision_vector.y / 4;
 							
 							organism_list[i].vx += fabs(organism_list[j].vx) * collision_vector_normalised.x / 2;
 							organism_list[i].vy += fabs(organism_list[j].vy) * collision_vector_normalised.y / 2;
@@ -197,8 +212,12 @@ int main()
 		//std::cout << "rand" << (((rand() % 2) * 2) - 1) * 5 << std::endl;
         
 		//Organism loop
-		
-
+		for(int i = 0; i < organism_list.size(); i++) {
+			if (i % physics_check_interval == frame){
+				organism_list[i].rotation += 2*M_PI/180 * 0.5;
+				//float x = 
+			}
+		}
 		
 		//organism_list[rand() % organism_list.size()].vx += 1 * (rand() % 2 - 1);
 		//organism_list[rand() % organism_list.size()].vy += 1 * (rand() % 2 - 1);
@@ -241,9 +260,11 @@ int main()
 				organism_list[i].vy += speed_decay;
 			}
 			organism_list[i].update_values();
-			organism_list[i].rotation += 2*M_PI/180 * 0.5;
-			window.draw(organism_list[i].sight_line, 2, sf::LinesStrip);
+			
+			//window.draw(organism_list[i].sight_line, 2, sf::LinesStrip);
 			window.draw(organism_list[i].shape);
+			
+			window.draw(organism_list[i].sight_cone, 4, sf::LinesStrip);
             //std::cout << organism_list[i].xposition << ", "  << organism_list[i].yposition << "\n";
         }
         for(int i = 0; i < giblet_list.size(); i++) {
