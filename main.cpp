@@ -18,6 +18,8 @@ public:
     sf::CircleShape shape;
 };
 
+
+
 void Giblet::set_values(int max, int min, float pxposition, float pyposition) {
     size = (min + rand() % (( max + 1 ) - min)) / 1000;
     value = M_PI * size * size;
@@ -41,8 +43,7 @@ public:
     sf::CircleShape shape;
 	void set_values(float, float, float, float);
 	void update_values();
-    //sf::Vertex sight_line[2];
-	sf::Vertex sight_cone[4];// = {sf::Vector2f(10, 10), sf::Vector2f(100, 0), sf::Vector2f(0, 90)};
+	sf::Vertex sight_cone[4];
 	
 
 	std::vector<int> v3Color = {0, 0, 0};   
@@ -54,28 +55,21 @@ void Organism::set_values(float psize, float pxposition, float pyposition, float
     xposition = pxposition;
     yposition = pyposition;
 	shape.setOrigin(psize, psize);
-	shape.setPosition(xposition /* - sqrt(size / 2)*/, yposition /*- sqrt(size / 2)*/);
+	shape.setPosition(xposition, yposition);
 	sight_cone_range = psight_cone_range * M_PI/180;
-	//sight_line[0] = sf::Vector2f(xposition, yposition);
-	//sight_line[1] = sf::Vector2f(xposition + (sight_range * sin(rotation)), yposition + (sight_range * cos(rotation)));
 	sight_cone[0] = sf::Vector2f(xposition, yposition);
 	sight_cone[1] = sf::Vector2f(xposition + (sight_range * sin(rotation - sight_cone_range)), yposition + (sight_range * cos(rotation - sight_cone_range)));
 	sight_cone[2] = sf::Vector2f(xposition + (sight_range * sin(rotation + sight_cone_range)), yposition + (sight_range * cos(rotation + sight_cone_range)));
 	sight_cone[3] = sf::Vector2f(xposition, yposition);
-	//sight_line[1] = sf::Vector2f(xposition + 20, yposition + 20);
 
 }
 
 void Organism::update_values() {
-	//sight_line[0] = sf::Vector2f(xposition, yposition);
-	//sight_line[1] = sf::Vector2f(xposition + (sight_range * sin(rotation)), yposition + (sight_range * cos(rotation)));
-	//sight_cone[0].color = sf::Color::Red;
-	//sight_line[1].color = sf::Color::Red;
 	sight_cone[0] = sf::Vector2f(xposition, yposition);
 	sight_cone[1] = sf::Vector2f(xposition + (sight_range * sin(rotation - sight_cone_range)), yposition + (sight_range * cos(rotation - sight_cone_range)));
 	sight_cone[2] = sf::Vector2f(xposition + (sight_range * sin(rotation + sight_cone_range)), yposition + (sight_range * cos(rotation + sight_cone_range)));
 	sight_cone[3] = sf::Vector2f(xposition, yposition);
-	shape.setPosition(xposition /* - sqrt(size / 2)*/, yposition /*- sqrt(size / 2)*/);
+	shape.setPosition(xposition, yposition);
 	xposition += vx;
 	yposition += vy;
 }
@@ -118,8 +112,12 @@ int main()
     //These will be divided by 1000
     int max_food_size = 1000; 
     int min_food_size = 1000;
+	int max_food = 100;
 
     //Initialise variables
+	
+	std::vector<void *> everything_list;
+	
     std::vector<Giblet> giblet_list;
 
 
@@ -128,31 +126,24 @@ int main()
 
     //Create List of creatures
     std::vector<Organism> organism_list;
+	std::vector<
     for(int i = 0; i < organism_count; i++) {
         Organism new_organism;
         new_organism.set_values(5, rand() % world_size, rand() % world_size, 20);
         organism_list.push_back(new_organism);
     }
-	//Organism new_organism;
-	//new_organism.set_values(5, 800, 800, 2);
-	//organism_list.push_back(new_organism);
 
     //Set up SFML window
     sf::RenderWindow window(sf::VideoMode(1600, 1600), "Peytri <3");
-    //sf::CircleShape shape(100.f);
     window.sf::RenderWindow::setFramerateLimit(framerate);
-    //shape.setFillColor(sf::Color::Green);
 
 
 	//Draw a grid
 	std::vector<sf::Vertex> grid_line_list_a;
 	std::vector<sf::Vertex> grid_line_list_b;
 	for (int i = 0; i < int(world_size / grid_size); i++) {
-			//sf::Vertex grid_line_list_entry[2];
 			grid_line_list_a.push_back (sf::Vector2f(grid_size * i, 0));
 			grid_line_list_b.push_back (sf::Vector2f(grid_size * i, world_size));
-			//grid_line_list_a.push_back(grid_line_list_entry);
-			
 			grid_line_list_a.push_back (sf::Vector2f(0, grid_size * i));
 			grid_line_list_b.push_back (sf::Vector2f(world_size, grid_size * i));
 	}
@@ -197,18 +188,13 @@ int main()
 			vision_frame++;
 		}
         //Food spawn loop
-        if (food_spawn_chance > (rand() % 1000000000)) {
-            Giblet new_giblet;
-            new_giblet.set_values(max_food_size, min_food_size, rand() % world_size, rand() % world_size);
-			giblet_list.push_back(new_giblet);
-			/*
-			Organism new_organism;
-			new_organism.set_values(5, 800 + (((rand() % 2) * 2) - 1) * 5, 800 + (((rand() % 2) * 2) - 1) * 5);
-			organism_list.push_back(new_organism);
-			organism_list[organism_list.size() - 1].vx = 0;
-			organism_list[organism_list.size() - 1].vy = 0;
-			*/
-        }
+		if (giblet_list.size() > max_food) {
+			if (food_spawn_chance > (rand() % 1000000000)) {
+				Giblet new_giblet;
+				new_giblet.set_values(max_food_size, min_food_size, rand() % world_size, rand() % world_size);
+				giblet_list.push_back(new_giblet);
+			}
+		}
 
 		//Physics loop
 		for(int i = 0; i < organism_list.size(); i++) {
@@ -217,7 +203,6 @@ int main()
 					sf::Vector2f collision_vector;
 					float sum_radius = pow(organism_list[i].size + organism_list[j].size, 2);
 					float distance = pow(organism_list[i].xposition - organism_list[j].xposition, 2) + pow(organism_list[i].yposition - organism_list[j].yposition,2 );
-					//float distance_temp = sqrt(pow(organism_list[i].xposition - organism_list[j].xposition, 2) + pow(organism_list[i].yposition - organism_list[j].yposition,2 ));
 					if ((i != j) && (distance < sum_radius)) {
 						collision_vector = {organism_list[i].xposition - organism_list[j].xposition, organism_list[i].yposition - organism_list[j].yposition};
 						sf::Vector2f collision_vector_normalised = {collision_vector.x / sqrt(pow(collision_vector.x, 2) + pow(collision_vector.y, 2)), collision_vector.y / sqrt(pow(collision_vector.x, 2) + pow(collision_vector.y, 2))};
@@ -235,13 +220,11 @@ int main()
 							organism_list[i].vy += fabs(organism_list[j].vy) * collision_vector_normalised.y / 2;
 							organism_list[j].vx -= fabs(organism_list[i].vx) * collision_vector_normalised.x / 2;
 							organism_list[j].vy -= fabs(organism_list[i].vy) * collision_vector_normalised.y / 2;
-							//std::cout << distance << std::endl;
 						}
 					}
 				}
 			}
 		}
-		//std::cout << "rand" << (((rand() % 2) * 2) - 1) * 5 << std::endl;
         
 		//Organism loop
 		for(int i = 0; i < organism_list.size(); i++) {
@@ -250,15 +233,13 @@ int main()
 				bool break_var = false;
 				for(int j = 0; j < organism_list.size() && !break_var; j++) {
 					
-					sf::Vertex point = sf::Vector2f(organism_list[j].xposition, organism_list[j].yposition);//
-					//std::cout << organism_list[j].xposition << "|"<<  organism_list[j].yposition <<std::endl;
+					sf::Vertex point = sf::Vector2f(organism_list[j].xposition, organism_list[j].yposition);
 					float cp1 = cross_product(organism_list[i].sight_cone[0], point, organism_list[i].sight_cone[0], organism_list[i].sight_cone[1]);
 					float cp2 = cross_product(organism_list[i].sight_cone[1], point, organism_list[i].sight_cone[1], organism_list[i].sight_cone[2]);
 					float cp3 = cross_product(organism_list[i].sight_cone[2], point, organism_list[i].sight_cone[2], organism_list[i].sight_cone[3]);
 					if (signTheSame(cp1, cp2, cp3)) {
 						if (i != j) {
 						organism_list[i].vision_color = sf::Color::Red;
-						//std::cout << organism_list[j].xposition << "|" << organism_list[j].yposition << "\n";
 						break_var = true;
 						}
 					} else {
@@ -269,14 +250,6 @@ int main()
 				}
 			}
 		}
-		
-		//organism_list[rand() % organism_list.size()].vx += 1 * (rand() % 2 - 1);
-		//organism_list[rand() % organism_list.size()].vy += 1 * (rand() % 2 - 1);
-		
-		//organism_list[0].vx = 1;
-		//organism_list[0].vy = 1;
-		
-		//std::cout << organism_list.size() << std::endl;
 
         sf::Event event;
         while (window.pollEvent(event))
@@ -287,18 +260,12 @@ int main()
 
         window.clear();
 		for(int i = 0; i < grid_line_list_a.size(); i++) {
-			//window.draw(grid_line_list[0], 2, sf::LinesStrip);
 			grid_line_list_a[i].color = sf::Color(100, 100, 100);
 			grid_line_list_b[i].color = sf::Color(100, 100, 100);
 			sf::Vertex grid_line_temp[2] = {grid_line_list_a[i], grid_line_list_b[i]};		
-			//grid_line_temp.Color = sf::Color(100, 100, 100);
 			window.draw(grid_line_temp, 2, sf::LinesStrip);	
 		}
         for(int i = 0; i < organism_list.size(); i++) {
-            //organism_list[i].shape.sf::CircleShape::setRadius(organism_list[i].size); 
-            //sf::CircleShape shapeToDraw = organism_list[i].shape;
-            //shapeToDraw.setRadius(organism_list[i].size);
-            //shapeToDraw.setPosition(organism_list[i].xposition, organism_list[i].yposition);
 
 			if (organism_list[i].vx > 0) {
 				organism_list[i].vx -= speed_decay;
@@ -312,57 +279,22 @@ int main()
 			}
 			organism_list[i].update_values();
 			
-			//window.draw(organism_list[i].sight_line, 2, sf::LinesStrip);
 			window.draw(organism_list[i].shape);
-			//if (cross_product_2d(organism_list[0].sight_cone[0], sf::Vector2f(0,0)) < 0) {
-			//	organism_list[0].sight_cone[0].color = sf::Color::Red;
-			//}
 			
 			organism_list[i].rotation += 0.01;
 
 			
-			//organism_list[0].sight_cone[1].color = sf::Color::Red;
 			organism_list[i].sight_cone[0].color = organism_list[i].vision_color;
 			organism_list[i].sight_cone[1].color = organism_list[i].vision_color;
 			organism_list[i].sight_cone[2].color = organism_list[i].vision_color;
 			organism_list[i].sight_cone[3].color = organism_list[i].vision_color;
 			
 			window.draw(organism_list[i].sight_cone, 4, sf::LinesStrip);
-			
-            //std::cout << organism_list[i].xposition << ", "  << organism_list[i].yposition << "\n";
+
         }
-			//std::cout << cp1 << std::endl;
-			//float cross_product(sf::Vertex[2] va, sf::Vertex[2] vb){
-			//	return 0;
-			//}
-			//std::cout << organism_list[0].sight_cone[0].position.x << ", "<< organism_list[0].sight_cone[0].position.y << " | "  << organism_list[0].sight_cone[0].position.x << ", " << organism_list[0].sight_cone[0].position.y << " | "<< cross_product_2d(organism_list[0].sight_cone[0], sf::Vector2f(1, 1)) << std::endl;
-			//float tempx = organism_list[0].sight_cone[0].position.x;
-			//float tempy = organism_list[0].sight_cone[0].position.y;
-			
-			/*std::cout << cross_product_2d(organism_list[0].sight_cone[0], organism_list[0].sight_cone[1]) * cross_product_2d(organism_list[0].sight_cone[1], sf::Vector2f(800, 800)) << "|" <<cross_product_2d(organism_list[0].sight_cone[1], organism_list[0].sight_cone[2]) * cross_product_2d(organism_list[0].sight_cone[2], sf::Vector2f(800, 800)) << "|" << cross_product_2d(organism_list[0].sight_cone[2], organism_list[0].sight_cone[3]) * cross_product_2d(organism_list[0].sight_cone[2], sf::Vector2f(800, 800)) << std::endl;
-			if (signTheSame(cross_product_2d(organism_list[0].sight_cone[0], organism_list[0].sight_cone[1]) * cross_product_2d(organism_list[0].sight_cone[1], sf::Vector2f(800, 800)), cross_product_2d(organism_list[0].sight_cone[1], organism_list[0].sight_cone[2]) * cross_product_2d(organism_list[0].sight_cone[2], sf::Vector2f(800, 800)), cross_product_2d(organism_list[0].sight_cone[2], organism_list[0].sight_cone[3]) * cross_product_2d(organism_list[0].sight_cone[2], sf::Vector2f(800, 800)))) {
-				organism_list[0].sight_cone[0].color = sf::Color::Red;
-				organism_list[0].sight_cone[1].color = sf::Color::Red;
-				organism_list[0].sight_cone[2].color = sf::Color::Red;
-				organism_list[0].sight_cone[3].color = sf::Color::Red;
-				std::cout << "bingo";
-				//organism_list[0].sha
-			} else {
-				organism_list[0].sight_cone[0].color = sf::Color::White;
-				organism_list[0].sight_cone[1].color = sf::Color::White;
-				organism_list[0].sight_cone[2].color = sf::Color::White;
-				organism_list[0].sight_cone[3].color = sf::Color::White;
-			}
-			*/
-			//std::cout <<signTheSame(cross_product_2d(organism_list[0].sight_cone[0], organism_list[0].sight_cone[1]) * cross_product_2d(organism_list[0].sight_cone[1], sf::Vector2f(800, 800)), cross_product_2d(organism_list[0].sight_cone[1], organism_list[0].sight_cone[2]) * cross_product_2d(organism_list[0].sight_cone[2], sf::Vector2f(800, 800)), cross_product_2d(organism_list[0].sight_cone[2], organism_list[0].sight_cone[3]) * cross_product_2d(organism_list[0].sight_cone[2], sf::Vector2f(800, 800))) << std::endl;
-			//std::cout << cross_product_2d(organism_list[0].sight_cone[0], sf::Vector2f(1, 1)) * cross_product_2d(organism_list[0].sight_cone[1], sf::Vector2f(1, 1)) << std::endl;
+
         for(int i = 0; i < giblet_list.size(); i++) {
-            //organism_list[i].shape.sf::CircleShape::setRadius(organism_list[i].size); 
-            //sf::CircleShape shapeToDraw = giblet_list[i].shape;
-            //shapeToDraw.setRadius(organism_list[i].size);
-            //shapeToDraw.setPosition(giblet_list[i].xposition, giblet_list[i].yposition);
             window.draw(giblet_list[i].shape);
-            //std::cout << organism_list[i].xposition << ", "  << organism_list[i].yposition << "\n";
         }
 
 
@@ -371,5 +303,3 @@ int main()
 
     return 0;
 }
-
-//transform.rotate(angle, center);
