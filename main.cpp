@@ -126,7 +126,6 @@ int main()
 
     //Create List of creatures
     std::vector<Organism> organism_list;
-	std::vector<
     for(int i = 0; i < organism_count; i++) {
         Organism new_organism;
         new_organism.set_values(5, rand() % world_size, rand() % world_size, 20);
