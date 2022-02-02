@@ -41,19 +41,22 @@ public:
     float sight_range = 100;
 	sf::Color vision_color = sf::Color::White; 
     sf::CircleShape shape;
-	void set_values(float, float, float, float);
+	void set_values(float, float, float, float, bool, bool);
 	void update_values();
 	sf::Vertex sight_cone[4];
-	
+	bool vision;
+	bool intellegence;
 
 	std::vector<int> v3Color = {0, 0, 0};   
 };
 
-void Organism::set_values(float psize, float pxposition, float pyposition, float psight_cone_range) {
+void Organism::set_values(float psize, float pxposition, float pyposition, float psight_cone_range, bool pvision, bool pintellegence) {
     size = psize;
     shape.setRadius(size);
     xposition = pxposition;
     yposition = pyposition;
+	vision = pvision;
+	intellegence = pintellegence;
 	shape.setOrigin(psize, psize);
 	shape.setPosition(xposition, yposition);
 	sight_cone_range = psight_cone_range * M_PI/180;
@@ -104,7 +107,7 @@ int main()
     int framerate = 60;
     int world_size = 1600;
     int grid_size = 50;
-    float food_spawn_chance = 1000; //(out of 1000000000)
+    //float food_spawn_chance = 1000; //(out of 1000000000)
 	int physics_check_interval = 2; //in frames
 	int vision_check_interval = 6; //in frames
 	float speed_decay = 0.01;
@@ -112,14 +115,13 @@ int main()
     //These will be divided by 1000
     int max_food_size = 1000; 
     int min_food_size = 1000;
+	int food_timer_spawn = 30;
 	int max_food = 100;
 
-    //Initialise variables
-	
-	std::vector<void *> everything_list;
-	
-    std::vector<Giblet> giblet_list;
-
+    //Initialise variables	
+	int food_counter;
+	int food_timer;
+    //std::vector<Giblet> giblet_list;
 
     //Generate random seed
     srand(time(0));
@@ -128,7 +130,7 @@ int main()
     std::vector<Organism> organism_list;
     for(int i = 0; i < organism_count; i++) {
         Organism new_organism;
-        new_organism.set_values(5, rand() % world_size, rand() % world_size, 20);
+        new_organism.set_values(5, rand() % world_size, rand() % world_size, 20, true, true);
         organism_list.push_back(new_organism);
     }
 
@@ -181,17 +183,31 @@ int main()
 			physics_frame++;
 		}
 		
+		//vision / ai frame counter
 		if (vision_frame >= vision_check_interval) {
 			vision_frame = 0;
 		} else {
 			vision_frame++;
 		}
+		
+		//food timer
+		food_timer++;
+		
         //Food spawn loop
-		if (giblet_list.size() > max_food) {
-			if (food_spawn_chance > (rand() % 1000000000)) {
+		if (food_counter < max_food) {
+			if (food_timer > food_timer_spawn) {
+				Organism new_food;
+				new_food.set_values(1.5, world_size - (rand() % world_size), world_size - (rand() % world_size), 10, false, false);
+				organism_list.push_back(new_food);
+				
+				/*
 				Giblet new_giblet;
 				new_giblet.set_values(max_food_size, min_food_size, rand() % world_size, rand() % world_size);
 				giblet_list.push_back(new_giblet);
+				*/
+				std::cout << food_counter << std::endl;
+				food_counter++;
+				food_timer = 0;
 			}
 		}
 
@@ -228,7 +244,7 @@ int main()
 		//Organism loop
 		for(int i = 0; i < organism_list.size(); i++) {
 			//vision check
-			if (i % vision_check_interval == vision_frame){
+			if (i % vision_check_interval == vision_frame && organism_list[i].vision){
 				bool break_var = false;
 				for(int j = 0; j < organism_list.size() && !break_var; j++) {
 					
@@ -282,19 +298,20 @@ int main()
 			
 			organism_list[i].rotation += 0.01;
 
-			
-			organism_list[i].sight_cone[0].color = organism_list[i].vision_color;
-			organism_list[i].sight_cone[1].color = organism_list[i].vision_color;
-			organism_list[i].sight_cone[2].color = organism_list[i].vision_color;
-			organism_list[i].sight_cone[3].color = organism_list[i].vision_color;
-			
-			window.draw(organism_list[i].sight_cone, 4, sf::LinesStrip);
+			if (organism_list[i].vision) {
+				organism_list[i].sight_cone[0].color = organism_list[i].vision_color;
+				organism_list[i].sight_cone[1].color = organism_list[i].vision_color;
+				organism_list[i].sight_cone[2].color = organism_list[i].vision_color;
+				organism_list[i].sight_cone[3].color = organism_list[i].vision_color;
+				
+				window.draw(organism_list[i].sight_cone, 4, sf::LinesStrip);
+			}
 
         }
 
-        for(int i = 0; i < giblet_list.size(); i++) {
+        /*for(int i = 0; i < giblet_list.size(); i++) {
             window.draw(giblet_list[i].shape);
-        }
+        }*/
 
 
         window.display();
@@ -302,3 +319,5 @@ int main()
 
     return 0;
 }
+
+//transform.rotate(angle, center);
