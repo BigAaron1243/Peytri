@@ -7,27 +7,18 @@
 #include <cmath>
 #include "math.h"
 
-class Giblet {
+/*
+class Module {
 public:
-    float size;
-    float value;
-    float color;
-    float xposition;
-    float yposition;
-    void set_values(int, int, float, float);
-    sf::CircleShape shape;
-};
-
-
-
-void Giblet::set_values(int max, int min, float pxposition, float pyposition) {
-    size = (min + rand() % (( max + 1 ) - min)) / 1000;
-    value = M_PI * size * size;
-    shape.setRadius(size);
-    xposition = pxposition;
-    yposition = pyposition;
-	shape.setPosition(xposition, yposition);
+	std::vector<float>  
+	
+	void initialise();
 }
+
+void Module::initialise(int points) {
+	
+}
+*/
 
 class Organism {
 public:
@@ -36,26 +27,33 @@ public:
     float yposition;
 	float vx;
 	float vy;
+	float vw;
     float rotation = 10*M_PI/180;
 	float sight_cone_range;
     float sight_range = 100;
+	float energy;
 	sf::Color vision_color = sf::Color::White; 
     sf::CircleShape shape;
-	void set_values(float, float, float, float, bool, bool);
-	void update_values();
 	sf::Vertex sight_cone[4];
+	std::vector<Organism *> organism_memory; 
 	bool vision;
 	bool intellegence;
+	//std::vector<Module> module_list;
+	std::vector<int> color = {128, 127};
+	std::vector<unsigned int> dna;
+	
+	void set_values(float, float, float, float, float, bool, bool);
+	void update_values(float, float);
 
-	std::vector<int> v3Color = {0, 0, 0};   
 };
 
-void Organism::set_values(float psize, float pxposition, float pyposition, float psight_cone_range, bool pvision, bool pintellegence) {
+void Organism::set_values(float psize, float pxposition, float pyposition, float psight_cone_range, float penergy, bool pvision, bool pintellegence) {
     size = psize;
     shape.setRadius(size);
     xposition = pxposition;
     yposition = pyposition;
 	vision = pvision;
+	energy = penergy;
 	intellegence = pintellegence;
 	shape.setOrigin(psize, psize);
 	shape.setPosition(xposition, yposition);
@@ -67,7 +65,7 @@ void Organism::set_values(float psize, float pxposition, float pyposition, float
 
 }
 
-void Organism::update_values() {
+void Organism::update_values(float speed_decay, float rotation_speed_decay) {
 	sight_cone[0] = sf::Vector2f(xposition, yposition);
 	sight_cone[1] = sf::Vector2f(xposition + (sight_range * sin(rotation - sight_cone_range)), yposition + (sight_range * cos(rotation - sight_cone_range)));
 	sight_cone[2] = sf::Vector2f(xposition + (sight_range * sin(rotation + sight_cone_range)), yposition + (sight_range * cos(rotation + sight_cone_range)));
@@ -75,6 +73,29 @@ void Organism::update_values() {
 	shape.setPosition(xposition, yposition);
 	xposition += vx;
 	yposition += vy;
+	rotation += vw;
+	
+	
+	
+	if (vx > 0) {
+		vx -= speed_decay;
+	} else if (vx < 0) {
+		vx += speed_decay;
+	}
+	if (vy > 0) {
+		vy -= speed_decay;
+	} else if (vy < 0) {
+		vy += speed_decay;
+	}
+	if (vw > 0) {
+		vw -= rotation_speed_decay;
+	} if (vw < 0) {
+		vw += rotation_speed_decay;
+	}
+	if (vw < rotation_speed_decay && vw > -1 * rotation_speed_decay) {
+		vw = 0;
+	}
+	
 }
 
 template<class T> bool signTheSame(T t1, T t2, T t3)
@@ -111,6 +132,7 @@ int main()
 	int physics_check_interval = 2; //in frames
 	int vision_check_interval = 6; //in frames
 	float speed_decay = 0.01;
+	float rotation_speed_decay = 0.003;
 
     //These will be divided by 1000
     int max_food_size = 1000; 
@@ -130,7 +152,8 @@ int main()
     std::vector<Organism> organism_list;
     for(int i = 0; i < organism_count; i++) {
         Organism new_organism;
-        new_organism.set_values(5, rand() % world_size, rand() % world_size, 20, true, true);
+        new_organism.set_values(5, rand() % world_size, rand() % world_size, 20, 10, true, true);
+		//new_organism.vw = -0.3453234;
         organism_list.push_back(new_organism);
     }
 
@@ -197,7 +220,7 @@ int main()
 		if (food_counter < max_food) {
 			if (food_timer > food_timer_spawn) {
 				Organism new_food;
-				new_food.set_values(1.5, world_size - (rand() % world_size), world_size - (rand() % world_size), 10, false, false);
+				new_food.set_values(3, world_size - (rand() % world_size), world_size - (rand() % world_size), 10, 20, false, false);
 				organism_list.push_back(new_food);
 				
 				/*
@@ -205,7 +228,7 @@ int main()
 				new_giblet.set_values(max_food_size, min_food_size, rand() % world_size, rand() % world_size);
 				giblet_list.push_back(new_giblet);
 				*/
-				std::cout << food_counter << std::endl;
+				//std::cout << food_counter << std::endl;
 				food_counter++;
 				food_timer = 0;
 			}
@@ -235,6 +258,9 @@ int main()
 							organism_list[i].vy += fabs(organism_list[j].vy) * collision_vector_normalised.y / 2;
 							organism_list[j].vx -= fabs(organism_list[i].vx) * collision_vector_normalised.x / 2;
 							organism_list[j].vy -= fabs(organism_list[i].vy) * collision_vector_normalised.y / 2;
+							
+							//organism_list[i].vw = (organism_list[i].vw + organism_list[j].vw) /2;
+							//organism_list[j].vw = (organism_list[i].vw + organism_list[j].vw) /2;
 						}
 					}
 				}
@@ -244,9 +270,10 @@ int main()
 		//Organism loop
 		for(int i = 0; i < organism_list.size(); i++) {
 			//vision check
+			//int memorian;
 			if (i % vision_check_interval == vision_frame && organism_list[i].vision){
 				bool break_var = false;
-				for(int j = 0; j < organism_list.size() && !break_var; j++) {
+				for(int j = 0; j < organism_list.size(); j++) {
 					
 					sf::Vertex point = sf::Vector2f(organism_list[j].xposition, organism_list[j].yposition);
 					float cp1 = cross_product(organism_list[i].sight_cone[0], point, organism_list[i].sight_cone[0], organism_list[i].sight_cone[1]);
@@ -255,6 +282,16 @@ int main()
 					if (signTheSame(cp1, cp2, cp3)) {
 						if (i != j) {
 						organism_list[i].vision_color = sf::Color::Red;
+						bool storage_var = true;
+						for (int k = 0; k < organism_list[i].organism_memory.size(); k++) {
+							if (organism_list[i].organism_memory[k] == &organism_list[j]) {
+								storage_var = true;
+							}
+						}
+						if (storage_var) {
+							organism_list[i].organism_memory.push_back(&organism_list[j]);
+							
+						}
 						break_var = true;
 						}
 					} else {
@@ -264,6 +301,17 @@ int main()
 					}
 				}
 			}
+			if (i % vision_check_interval == vision_frame) {
+				if (rand() % 100 == 1) {
+					organism_list[i].vw += 0.1;
+				}
+			}
+			if (i == 0 && organism_list[0].organism_memory.size() > 0) {
+			//std::cout << organism_list[0].organism_memory[0]->xposition << "|" << organism_list[0].organism_memory[0]->yposition << std::endl;
+			std::cout << organism_list[0].organism_memory.size() << std::endl;
+			}
+			organism_list[i].organism_memory.clear();
+			
 		}
 
         sf::Event event;
@@ -282,21 +330,15 @@ int main()
 		}
         for(int i = 0; i < organism_list.size(); i++) {
 
-			if (organism_list[i].vx > 0) {
-				organism_list[i].vx -= speed_decay;
-			} else if (organism_list[i].vx < 0) {
-				organism_list[i].vx += speed_decay;
-			}
-			if (organism_list[i].vy > 0) {
-				organism_list[i].vy -= speed_decay;
-			} else if (organism_list[i].vy < 0) {
-				organism_list[i].vy += speed_decay;
-			}
-			organism_list[i].update_values();
+			
+
+			organism_list[i].update_values(speed_decay, rotation_speed_decay);
+			
+			//std::cout << organism_list[0].vw << std::endl;
 			
 			window.draw(organism_list[i].shape);
 			
-			organism_list[i].rotation += 0.01;
+			//organism_list[i].rotation += 0.01;
 
 			if (organism_list[i].vision) {
 				organism_list[i].sight_cone[0].color = organism_list[i].vision_color;
