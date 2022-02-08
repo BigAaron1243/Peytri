@@ -41,10 +41,11 @@ public:
 	//std::vector<Module> module_list;
 	std::vector<int> color = {128, 127};
 	std::vector<unsigned int> dna;
+	int action_timer = 0;
 	
 	void set_values(float, float, float, float, float, bool, bool);
 	void update_values(float, float);
-
+	void add_speed(float);
 };
 
 void Organism::set_values(float psize, float pxposition, float pyposition, float psight_cone_range, float penergy, bool pvision, bool pintellegence) {
@@ -96,6 +97,13 @@ void Organism::update_values(float speed_decay, float rotation_speed_decay) {
 		vw = 0;
 	}
 	
+	action_timer -= 1;
+	
+}
+
+void Organism::add_speed(float velocity) {
+	vx += sin(rotation) * velocity;
+	vy += cos(rotation) * velocity;
 }
 
 template<class T> bool signTheSame(T t1, T t2, T t3)
@@ -116,7 +124,22 @@ float cross_product(sf::Vertex a1, sf::Vertex a2, sf::Vertex b1, sf::Vertex b2){
 	return cpvavb;
 }
 
-
+int organism_decision(Organism* active_body) {
+	//std::cout << active_body->xposition << std::endl;
+	if (active_body->organism_memory.size() < 1) {
+		if (rand() % 10 < 5) {
+			active_body->vw += (2 * M_PI/180);
+		} else {
+			active_body->vw -= (2 * M_PI/180);
+		}
+		std::cout << active_body->organism_memory.size() << std::endl;
+	} else {
+		active_body->add_speed(0.6);
+		std::cout << active_body->organism_memory.size() << std::endl;
+	}
+	active_body->action_timer = (rand() % 10) + 10;
+	return 0;
+}
 
 int main()
 {
@@ -124,14 +147,14 @@ int main()
 	
 	
     //Settings
-    int organism_count = 100;
+    int organism_count = 50;
     int framerate = 60;
     int world_size = 1600;
     int grid_size = 50;
     //float food_spawn_chance = 1000; //(out of 1000000000)
 	int physics_check_interval = 2; //in frames
 	int vision_check_interval = 6; //in frames
-	float speed_decay = 0.01;
+	float speed_decay = 0.03;
 	float rotation_speed_decay = 0.003;
 
     //These will be divided by 1000
@@ -285,7 +308,7 @@ int main()
 						bool storage_var = true;
 						for (int k = 0; k < organism_list[i].organism_memory.size(); k++) {
 							if (organism_list[i].organism_memory[k] == &organism_list[j]) {
-								storage_var = true;
+								storage_var = false;
 							}
 						}
 						if (storage_var) {
@@ -296,24 +319,30 @@ int main()
 						}
 					} else {
 						if (!break_var) {
-						organism_list[i].vision_color = sf::Color::White;
+							organism_list[i].vision_color = sf::Color::White;
 						}
 					}
 				}
 			}
 			if (i % vision_check_interval == vision_frame) {
-				if (rand() % 100 == 1) {
-					organism_list[i].vw += 0.1;
-				}
+				
 			}
 			if (i == 0 && organism_list[0].organism_memory.size() > 0) {
-			//std::cout << organism_list[0].organism_memory[0]->xposition << "|" << organism_list[0].organism_memory[0]->yposition << std::endl;
-			std::cout << organism_list[0].organism_memory.size() << std::endl;
+			//std::cout << organism_list[0].organism_memory[0]->xposition << "|" << organism_list[0].organism_memory[0]->yposition << "|" << organism_list[0].organism_memory[0]->action_timer << std::endl;
+			//std::cout << organism_list[0].organism_memory.size() << std::endl;
+			//std::cout << organism_list[0].rotation << std::endl;
 			}
-			organism_list[i].organism_memory.clear();
+			if (organism_list[i].intellegence) {
+				if (organism_list[i].action_timer < 1) {
+					organism_decision(&organism_list[i]);
+					organism_list[i].organism_memory.clear();
+				}
+			}
+
+		}
+		for(int i = 0; i < organism_list.size(); i++) {
 			
 		}
-
         sf::Event event;
         while (window.pollEvent(event))
         {
