@@ -106,6 +106,8 @@ void Organism::add_speed(float velocity) {
 	vy += cos(rotation) * velocity;
 }
 
+//int Organism::decision
+
 template<class T> bool signTheSame(T t1, T t2, T t3)
 {
 return t1 < 0 == t2 < 0 && t1 < 0 == t3 < 0 && t2 < 0 == t3 < 0;
